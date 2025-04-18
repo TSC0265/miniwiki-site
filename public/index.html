@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="icon" type="image/svg+xml" href="bookmark_icon.svg" />
+  <title>미니위키</title>
+  <style>
+    body {
+      position: relative;
+
+      font-family: sans-serif;
+      padding: 2rem;
+      max-width: 768px;
+      margin: auto;
+      background-color: white;
+      color: black;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    body.dark {
+      background-color: #2b2b2b;
+      color: #e0e0e0;
+    }
+    .search {
+      margin-bottom: 1rem;
+      width: 100%;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .card:hover {
+      background-color: #f0f0f0;
+    }
+    body.dark .card:hover {
+      background-color: #1e1e1e;
+    }
+    .back-button {
+      color: #3b82f6;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-bottom: 1rem;
+      display: inline-block;
+    }
+    .hidden {
+      display: none;
+    }
+    mark {
+      background-color: yellow;
+    }
+    .add-form {
+      margin-top: 2rem;
+      border-top: 1px solid #ccc;
+      padding: 1rem;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    .add-form input, .add-form textarea {
+      width: 100%;
+      max-width: 100%;
+      padding: 1rem;
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      resize: none;
+      box-sizing: border-box;
+    }
+    .dark-toggle {
+      float: right;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-top: -2.5rem;
+    }
+    button {
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #2563eb;
+    }
+    .button-group {
+      margin-top: 1rem;
+    }
+    .button-group button {
+      margin-right: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      background: #eee;
+      color: #333;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      margin-right: 0.3rem;
+    }
+    .comment-box {
+      margin-top: 2rem;
+      border-top: 1px solid #ccc;
+      padding-top: 1rem;
+    }
+    .comment-box textarea {
+      width: 100%;
+      height: 80px;
+      margin-bottom: 0.5rem;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    .comment {
+      border-top: 1px solid #eee;
+      padding: 0.5rem 0;
+      font-size: 0.95rem;
+    }
+    .ranking-box {
+  margin-top: 1rem;
+      background: #f3f4f6;
+      border: 1px solid #ddd;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      border-radius: 8px;
+    }
+    .layout {
+      display: flex;
+      flex-direction: column;
+    }
+    @media (min-width: 768px) {
+      .layout {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+      .ranking-box {
+      background: #f3f4f6;
+      border: 1px solid #ddd;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      border-radius: 8px;
+      width: 260px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+      #mainContent {
+        flex: 1;
+      }
+    }
+    .comment {
+    border-top: 1px solid #eee;
+    padding: 0.5rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .delete-comment {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    margin-left: 0.5rem;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .delete-comment:hover {
+    background: #dc2626;
+  }
+  .comment-time {
+    font-size: 0.75rem;
+    color: #888;
+    margin-left: 0.5rem;
+  }
+  .comment-author {
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-right: 0.5rem;
+    color: #555;
+  }
+</style>
+</head>
+<body>
+  <h1>📚 미니위키 <span class="dark-toggle" id="toggleTheme">🌙 다크 모드</span></h1>
+
+  <div class="layout">
+    <div id="mainContent">
+      <input type="text" id="searchInput" class="search" placeholder="문서 검색...">
+      <div id="docList"></div>
+      <div id="docView" class="hidden">
+        <span class="back-button" id="backButton">← 목록으로 돌아가기</span>
+        <h2 id="docTitle"></h2>
+        <div id="docTags"></div>
+        <div id="docContent"></div>
+        <div class="comment-box">
+          <input type="text" id="commentAuthor" placeholder="이름 (선택)" style="width:100%;padding:0.5rem;font-size:1rem;margin-bottom:0.5rem;border:1px solid #ccc;border-radius:6px;" />
+          <h4>💬 댓글</h4>
+          <div id="commentList"></div>
+          <textarea id="newComment" placeholder="댓글을 입력하세요..."></textarea>
+          <button id="addComment">댓글 추가</button>
+        </div>
+      </div>
+
+      <div class="add-form">
+        <h3>📄 문서 추가</h3>
+        <input type="text" id="newTitle" placeholder="제목 (예: Galaxy Z10)">
+        <input type="text" id="newId" placeholder="ID (예: galaxy-z10)">
+        <input type="text" id="newTags" placeholder="태그 (예: 삼성,스마트폰)">
+        <textarea id="newContent" rows="8" placeholder="내용 (HTML 허용)"></textarea>
+        <button id="addDocButton">추가</button>
+      </div>
+    </div>
+
+    <div class="ranking-box" style="position: relative; bottom: 0; margin-top: 2rem;">
+      <h3>📈 실시간 검색 순위</h3>
+      <ol id="rankingList">
+        <li>불러오는 중...</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    const rankingList = document.getElementById("rankingList");
+    const searchInput = document.getElementById("searchInput");
+    const toggleTheme = document.getElementById("toggleTheme");
+    const newTitle = document.getElementById("newTitle");
+    const newId = document.getElementById("newId");
+    const newTags = document.getElementById("newTags");
+    const newContent = document.getElementById("newContent");
+    const addDocButton = document.getElementById("addDocButton");
+    const docList = document.getElementById("docList");
+
+    let documents = JSON.parse(localStorage.getItem("documents")) || [];
+
+    function saveDocuments() {
+      localStorage.setItem("documents", JSON.stringify(documents));
+    }
+
+    function renderList(filtered = documents) {
+      docList.innerHTML = "";
+      if (filtered.length === 0) {
+        docList.innerHTML = "<p>검색 결과가 없습니다.</p>";
+        return;
+      }
+      filtered.forEach(doc => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.textContent = doc.title;
+        card.addEventListener("click", () => showDoc(doc));
+        docList.appendChild(card);
+      });
+    }
+
+    function addDocument() {
+      const title = newTitle.value.trim();
+      const id = newId.value.trim();
+      const tags = newTags.value.split(',').map(t => t.trim()).filter(Boolean);
+      const content = newContent.value.trim();
+
+      if (!title || !id || !content) {
+        alert("모든 항목을 입력해주세요.");
+        return;
+      }
+
+      if (documents.some(doc => doc.id === id)) {
+        alert("이미 존재하는 ID입니다.");
+        return;
+      }
+
+      const newDoc = { id, title, tags, content };
+      documents.push(newDoc);
+      saveDocuments();
+      renderList();
+      newTitle.value = "";
+      newId.value = "";
+      newTags.value = "";
+      newContent.value = "";
+      alert("문서가 추가되었습니다!");
+    }
+
+    addDocButton.addEventListener("click", addDocument);
+
+    function showDoc(doc) {
+      const view = document.getElementById("docView");
+      const title = document.getElementById("docTitle");
+      const content = document.getElementById("docContent");
+      const tags = document.getElementById("docTags");
+      const commentList = document.getElementById("commentList");
+      if (!document.getElementById("commentSort")) {
+        const sortControls = document.createElement("div");
+        sortControls.innerHTML = `
+          <label style="font-size:0.85rem;margin-right:0.5rem;">정렬:</label>
+          <select id="commentSort" style="padding:0.2rem 0.5rem;font-size:0.85rem;">
+            <option value="newest">최신순</option>
+            <option value="oldest">오래된순</option>
+          </select>`;
+        commentList.parentElement.insertBefore(sortControls, commentList);
+      }
+      document.getElementById("commentSort").value = localStorage.getItem("commentSort") || "newest";
+      document.getElementById("commentSort").addEventListener("change", (e) => {
+        localStorage.setItem("commentSort", e.target.value);
+        showDoc(doc);
+      });
+
+      title.textContent = doc.title;
+      content.innerHTML = doc.content;
+      tags.innerHTML = (doc.tags || []).map(tag => `<span class='tag'>${tag}</span>`).join(" ");
+
+      const comments = JSON.parse(localStorage.getItem("comments") || '{}')[doc.id] || [];
+      const sortOrder = localStorage.getItem("commentSort") || "newest";
+      const sortedComments = [...comments];
+      if (sortOrder === "oldest") sortedComments.reverse();
+      commentList.innerHTML = sortedComments.map((c, i) => `<div class="comment">${c}<button data-index="${i}" class="delete-comment">삭제</button></div>`).join("");
+
+      document.getElementById("docList").classList.add("hidden");
+      view.classList.remove("hidden");
+
+      // 댓글 삭제 이벤트 위임
+      commentList.addEventListener("click", function (e) {
+        if (e.target.classList.contains("delete-comment")) {
+          const idx = parseInt(e.target.dataset.index);
+          if (!isNaN(idx)) {
+            comments.splice(idx, 1);
+            localStorage.setItem("comments", JSON.stringify({
+              ...JSON.parse(localStorage.getItem("comments") || '{}'),
+              [doc.id]: comments
+            }));
+            showDoc(doc); // 다시 렌더링
+          }
+        }
+      });
+
+      document.getElementById("addComment").onclick = function () {
+        const sortOrder = localStorage.getItem("commentSort") || "newest";
+        const newComment = document.getElementById("newComment").value.trim();
+        const newAuthor = document.getElementById("commentAuthor").value.trim() || "익명";
+        if (!newComment) return;
+        const timestamp = new Date().toLocaleString();
+        const commentData = `<span class='comment-author'>${newAuthor}</span> ${newComment} <span class='comment-time'>${timestamp}</span>`;
+        comments.push(commentData);
+        document.getElementById("newComment").value = "";
+        localStorage.setItem("comments", JSON.stringify({
+          ...JSON.parse(localStorage.getItem("comments") || '{}'),
+          [doc.id]: comments
+        }));
+        const sortedComments = [...comments];
+        if (sortOrder === "oldest") sortedComments.reverse();
+        commentList.innerHTML = sortedComments.map((c, i) => `<div class='comment'>${c} <button data-index="${i}" class="delete-comment">삭제</button></div>`).join("");
+      };
+    }
+
+    document.getElementById("backButton")?.addEventListener("click", () => {
+      document.getElementById("docView").classList.add("hidden");
+      document.getElementById("docList").classList.remove("hidden");
+    });
+
+    const fallbackRankings = [
+      "Galaxy S24", "iPhone 15 Pro", "MacBook Air M3", "Galaxy Watch 6", "iPad Pro 2024"
+    ];
+
+    async function fetchRankingData() {
+      try {
+        throw new Error("API endpoint not configured");
+      } catch (error) {
+        console.warn("실시간 순위 API를 사용할 수 없습니다. 기본값을 사용합니다.");
+        rankingList.innerHTML = "";
+        fallbackRankings.forEach((item) => {
+          const li = document.createElement("li");
+          li.textContent = item;
+          li.addEventListener("click", () => {
+            searchInput.value = item;
+            searchInput.dispatchEvent(new Event("input"));
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          });
+          rankingList.appendChild(li);
+        });
+      }
+    }
+
+    function applySavedTheme() {
+      const theme = localStorage.getItem("theme");
+      if (theme === "dark") {
+        document.body.classList.add("dark");
+        toggleTheme.textContent = "☀️ 라이트 모드";
+      } else {
+        document.body.classList.remove("dark");
+        toggleTheme.textContent = "🌙 다크 모드";
+      }
+    }
+
+    toggleTheme.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+      const isDark = document.body.classList.contains("dark");
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+      toggleTheme.textContent = isDark ? "☀️ 라이트 모드" : "🌙 다크 모드";
+    });
+
+    setInterval(fetchRankingData, 30000);
+    window.addEventListener("DOMContentLoaded", () => {
+      applySavedTheme();
+      fetchRankingData();
+      renderList();
+    });
+  </script>
+</body>
+</html>
